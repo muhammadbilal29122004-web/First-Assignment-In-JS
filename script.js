@@ -2,11 +2,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Elements ---
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = document.getElementById('themeIcon');
+    const authTabs = document.getElementById('authTabs');
     const loginTab = document.getElementById('loginTab');
     const signupTab = document.getElementById('signupTab');
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
     const toast = document.getElementById('toastNotification');
+
+    // --- Dashboard Elements ---
+    const userDashboard = document.getElementById('userDashboard');
+    const userAvatar = document.getElementById('userAvatar');
+    const userNameDisplay = document.getElementById('userNameDisplay');
+    const userEmailDisplay = document.getElementById('userEmailDisplay');
+    const logoutBtn = document.getElementById('logoutBtn');
 
     // --- Modal Elements ---
     const openForgotModalBtn = document.getElementById('openForgotModal');
@@ -18,7 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalNotice = document.getElementById('modalNotice');
     const forgotSubmit = document.getElementById('forgotSubmit');
 
-    // --- Theme Switcher Logic ---
+    // --- 3D Card Tilt Elements ---
+    const tiltCard = document.getElementById('tiltCard');
+    const cardGlare = document.getElementById('cardGlare');
+
+    // --- 1. Theme Switcher Logic ---
     const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme);
 
@@ -34,7 +46,99 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('theme', theme);
     }
 
-    // --- Tab Switching Logic ---
+    // --- 2. 3D Card Tilt Effect ---
+    if (tiltCard && window.innerWidth > 768) {
+        tiltCard.addEventListener('mousemove', (e) => {
+            const rect = tiltCard.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+
+            const rotateX = ((y - centerY) / centerY) * -8;
+            const rotateY = ((x - centerX) / centerX) * 8;
+
+            tiltCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            cardGlare.style.opacity = '1';
+            cardGlare.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255, 255, 255, 0.18), transparent 60%)`;
+        });
+
+        tiltCard.addEventListener('mouseleave', () => {
+            tiltCard.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+            cardGlare.style.opacity = '0';
+        });
+    }
+
+    // --- 3. Confetti Celebration Engine ---
+    const canvas = document.getElementById('confettiCanvas');
+    const ctx = canvas.getContext('2d');
+    let confettiParticles = [];
+    let confettiAnimationId = null;
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function triggerConfetti() {
+        confettiParticles = [];
+        const colors = ['#6366f1', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ffffff'];
+        for (let i = 0; i < 90; i++) {
+            confettiParticles.push({
+                x: canvas.width / 2,
+                y: canvas.height / 2 + 50,
+                r: Math.random() * 6 + 4,
+                d: Math.random() * 90,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                tilt: Math.floor(Math.random() * 10) - 10,
+                tiltAngleIncremental: (Math.random() * 0.07) + 0.05,
+                tiltAngle: 0,
+                vx: (Math.random() - 0.5) * 18,
+                vy: (Math.random() * -18) - 5,
+                gravity: 0.45,
+                opacity: 1
+            });
+        }
+
+        if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+        renderConfetti();
+    }
+
+    function renderConfetti() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let activeParticles = 0;
+
+        confettiParticles.forEach((p) => {
+            p.tiltAngle += p.tiltAngleIncremental;
+            p.y += (Math.cos(p.d) + 1 + p.r / 2) / 2 + p.vy;
+            p.x += Math.sin(p.d) * 2 + p.vx;
+            p.vy += p.gravity;
+            p.vx *= 0.98;
+            p.opacity -= 0.008;
+
+            if (p.opacity > 0) {
+                activeParticles++;
+                ctx.beginPath();
+                ctx.lineWidth = p.r / 1.5;
+                ctx.strokeStyle = p.color;
+                ctx.globalAlpha = Math.max(0, p.opacity);
+                ctx.moveTo(p.x + p.tilt + p.r, p.y);
+                ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+        });
+
+        if (activeParticles > 0) {
+            confettiAnimationId = requestAnimationFrame(renderConfetti);
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+
+    // --- 4. Tab Switching Logic ---
     loginTab.addEventListener('click', () => switchTab('login'));
     signupTab.addEventListener('click', () => switchTab('signup'));
 
@@ -53,7 +157,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Password Toggle Buttons (Data-Target) ---
+    // --- 5. Logged-In User Dashboard Flow ---
+    function showDashboard(name, email) {
+        authTabs.style.display = 'none';
+        loginForm.classList.remove('active');
+        signupForm.classList.remove('active');
+        userDashboard.classList.add('active');
+
+        // Initials for avatar
+        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'US';
+        userAvatar.textContent = initials;
+        userNameDisplay.textContent = name;
+        userEmailDisplay.textContent = email;
+
+        triggerConfetti();
+        showToast(`🎉 Logged in as ${name}!`, 'success');
+    }
+
+    logoutBtn.addEventListener('click', () => {
+        userDashboard.classList.remove('active');
+        authTabs.style.display = 'flex';
+        switchTab('login');
+        showToast('Logged out successfully.', 'success');
+    });
+
+    document.getElementById('actionProfile').addEventListener('click', () => {
+        showToast('Navigating to user profile...', 'success');
+    });
+
+    document.getElementById('actionSecurity').addEventListener('click', () => {
+        showToast('Security settings is up to date 🔒', 'success');
+    });
+
+    // --- 6. Password Visibility Toggle ---
     document.querySelectorAll('.toggle-password-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const targetId = btn.getAttribute('data-target');
@@ -66,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- Live Password Strength Meter ---
+    // --- 7. Password Strength Meter ---
     const signupPassword = document.getElementById('signupPassword');
     const strengthBar = document.getElementById('strengthBar');
     const strengthText = document.getElementById('strengthText');
@@ -100,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Helper Functions ---
+    // --- Helpers ---
     function isValidEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
@@ -121,13 +257,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Social Logins ---
     document.getElementById('googleLogin').addEventListener('click', () => {
         showToast('Connecting with Google...', 'success');
+        setTimeout(() => {
+            showDashboard('Google User', 'google.user@gmail.com');
+        }, 1000);
     });
 
     document.getElementById('githubLogin').addEventListener('click', () => {
         showToast('Connecting with GitHub...', 'success');
+        setTimeout(() => {
+            showDashboard('GitHub Developer', 'developer@github.com');
+        }, 1000);
     });
 
-    // --- Modal Open/Close Logic ---
+    // --- 8. Forgot Password Modal ---
     openForgotModalBtn.addEventListener('click', () => {
         forgotModal.classList.add('show');
         forgotEmail.focus();
@@ -142,21 +284,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeModalBtn.addEventListener('click', closeForgotModal);
 
-    // Close on clicking backdrop outside modal card
     forgotModal.addEventListener('click', (e) => {
-        if (e.target === forgotModal) {
-            closeForgotModal();
-        }
+        if (e.target === forgotModal) closeForgotModal();
     });
 
-    // Close on Escape key
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && forgotModal.classList.contains('show')) {
-            closeForgotModal();
-        }
+        if (e.key === 'Escape' && forgotModal.classList.contains('show')) closeForgotModal();
     });
 
-    // Forgot Password Form Submit
     forgotForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const email = forgotEmail.value.trim();
@@ -188,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1200);
     });
 
-    // --- Login Form Submit ---
+    // --- 9. Login Submit ---
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const email = document.getElementById('loginEmail');
@@ -221,13 +356,15 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 submitBtn.classList.remove('loading');
                 submitBtn.disabled = false;
-                showToast(`Welcome back, ${email.value.trim()}! Login successful.`, 'success');
+                const derivedName = email.value.split('@')[0].replace('.', ' ');
+                const formattedName = derivedName.charAt(0).toUpperCase() + derivedName.slice(1);
+                showDashboard(formattedName, email.value.trim());
                 loginForm.reset();
             }, 1200);
         }
     });
 
-    // --- Sign Up Form Submit ---
+    // --- 10. Sign Up Submit ---
     signupForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('signupName');
@@ -280,12 +417,11 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 submitBtn.classList.remove('loading');
                 submitBtn.disabled = false;
-                showToast(`Account created for ${name.value.trim()}! 🎉`, 'success');
+                showDashboard(name.value.trim(), email.value.trim());
                 signupForm.reset();
                 strengthBar.style.width = '0%';
                 strengthText.textContent = 'Password Strength';
                 strengthText.style.color = 'var(--text-secondary)';
-                setTimeout(() => switchTab('login'), 1500);
             }, 1200);
         }
     });
