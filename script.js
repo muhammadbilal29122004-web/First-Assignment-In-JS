@@ -8,6 +8,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const signupForm = document.getElementById('signupForm');
     const toast = document.getElementById('toastNotification');
 
+    // --- Modal Elements ---
+    const openForgotModalBtn = document.getElementById('openForgotModal');
+    const forgotModal = document.getElementById('forgotModal');
+    const closeModalBtn = document.getElementById('closeModal');
+    const forgotForm = document.getElementById('forgotForm');
+    const forgotEmail = document.getElementById('forgotEmail');
+    const forgotEmailError = document.getElementById('forgotEmailError');
+    const modalNotice = document.getElementById('modalNotice');
+    const forgotSubmit = document.getElementById('forgotSubmit');
+
     // --- Theme Switcher Logic ---
     const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme);
@@ -25,13 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Tab Switching Logic ---
-    loginTab.addEventListener('click', () => {
-        switchTab('login');
-    });
-
-    signupTab.addEventListener('click', () => {
-        switchTab('signup');
-    });
+    loginTab.addEventListener('click', () => switchTab('login'));
+    signupTab.addEventListener('click', () => switchTab('signup'));
 
     function switchTab(tab) {
         hideToast();
@@ -95,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Helper Validation Functions ---
+    // --- Helper Functions ---
     function isValidEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
@@ -104,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.textContent = message;
         toast.className = `toast-notification ${type}`;
         setTimeout(() => {
-            // Auto hide after 4 seconds
             toast.style.display = 'none';
         }, 4000);
     }
@@ -121,6 +125,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('githubLogin').addEventListener('click', () => {
         showToast('Connecting with GitHub...', 'success');
+    });
+
+    // --- Modal Open/Close Logic ---
+    openForgotModalBtn.addEventListener('click', () => {
+        forgotModal.classList.add('show');
+        forgotEmail.focus();
+    });
+
+    function closeForgotModal() {
+        forgotModal.classList.remove('show');
+        forgotEmailError.textContent = '';
+        modalNotice.style.display = 'none';
+        forgotForm.reset();
+    }
+
+    closeModalBtn.addEventListener('click', closeForgotModal);
+
+    // Close on clicking backdrop outside modal card
+    forgotModal.addEventListener('click', (e) => {
+        if (e.target === forgotModal) {
+            closeForgotModal();
+        }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && forgotModal.classList.contains('show')) {
+            closeForgotModal();
+        }
+    });
+
+    // Forgot Password Form Submit
+    forgotForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = forgotEmail.value.trim();
+        forgotEmailError.textContent = '';
+        modalNotice.style.display = 'none';
+
+        if (!email) {
+            forgotEmailError.textContent = 'Please enter your email address.';
+            return;
+        }
+
+        if (!isValidEmail(email)) {
+            forgotEmailError.textContent = 'Please enter a valid email address.';
+            return;
+        }
+
+        forgotSubmit.classList.add('loading');
+        forgotSubmit.disabled = true;
+
+        setTimeout(() => {
+            forgotSubmit.classList.remove('loading');
+            forgotSubmit.disabled = false;
+            modalNotice.className = 'modal-notice success';
+            modalNotice.textContent = `A reset code has been sent to ${email} 📩`;
+            setTimeout(() => {
+                closeForgotModal();
+                showToast(`OTP Code sent to ${email}! Check your inbox.`, 'success');
+            }, 2500);
+        }, 1200);
     });
 
     // --- Login Form Submit ---

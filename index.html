@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A modern and interactive authentication portal with Dark Mode and Password Strength Checker.">
+    <meta name="description" content="A modern and interactive authentication portal with Dark Mode, Password Strength Checker, and Reset Modal.">
     <title>Auth Portal | Login & Register</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -69,7 +69,7 @@
                         <input type="checkbox" id="rememberMe">
                         <span>Remember me</span>
                     </label>
-                    <a href="#" class="link-btn">Forgot password?</a>
+                    <button type="button" class="link-btn" id="openForgotModal">Forgot password?</button>
                 </div>
 
                 <button type="submit" class="submit-btn" id="loginSubmit">
@@ -129,6 +129,30 @@
 
             <!-- Alert / Toast Notification -->
             <div id="toastNotification" class="toast-notification"></div>
+        </div>
+    </div>
+
+    <!-- Interactive Forgot Password Modal -->
+    <div id="forgotModal" class="modal-backdrop">
+        <div class="modal-card">
+            <button type="button" id="closeModal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+            <div class="modal-icon">🔐</div>
+            <div class="form-header">
+                <h2>Reset Password</h2>
+                <p>Enter your registered email and we'll send you an OTP code</p>
+            </div>
+            <form id="forgotForm" novalidate>
+                <div class="form-group">
+                    <label for="forgotEmail">Email Address</label>
+                    <input type="email" id="forgotEmail" placeholder="name@company.com" required>
+                    <span class="error-msg" id="forgotEmailError"></span>
+                </div>
+                <button type="submit" class="submit-btn" id="forgotSubmit">
+                    <span class="btn-text">Send Reset Code</span>
+                    <span class="spinner"></span>
+                </button>
+            </form>
+            <div id="modalNotice" class="modal-notice"></div>
         </div>
     </div>
 
